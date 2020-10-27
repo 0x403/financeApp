@@ -3,7 +3,7 @@ package com.example.UserService.service;
 import com.example.UserService.dto.UserDto;
 import com.example.UserService.entity.UserEntity;
 import com.example.UserService.repository.UserRepository;
-import org.springframework.beans.BeanUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,15 +29,19 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Record already exists.");
         }
 
-        UserEntity userEntity = new UserEntity();
-        BeanUtils.copyProperties(user, userEntity);
+        ModelMapper modelMapper = new ModelMapper();
+        UserEntity userEntity = modelMapper.map(user, UserEntity.class);
+        // alternative way with beanutils
+//        UserEntity userEntity = new UserEntity();
+//        BeanUtils.copyProperties(user, userEntity);
 
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 
         UserEntity storedUserDetails = userRepository.save(userEntity);
 
-        UserDto returnValue = new UserDto();
-        BeanUtils.copyProperties(storedUserDetails, returnValue);
+        UserDto returnValue = modelMapper.map(storedUserDetails, UserDto.class);
+//        UserDto returnValue = new UserDto();
+//        BeanUtils.copyProperties(storedUserDetails, returnValue);
 
         return returnValue;
     }

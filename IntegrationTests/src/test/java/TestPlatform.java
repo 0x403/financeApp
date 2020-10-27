@@ -7,6 +7,7 @@ public class TestPlatform implements BeforeAllCallback {
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
 
+//        TestedApps.main(new String[0]);
         SpringApplication.run(TestedApps.class);
 
     }
