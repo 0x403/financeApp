@@ -18,7 +18,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -37,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, TestPlatform.class})
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IntegrationTests {
 
 //    @InjectMocks
@@ -72,15 +76,16 @@ public class IntegrationTests {
 //    }
 
     @Test
+    @Order(1)
     void createUserEndpointTest() throws IOException {
 
         CloseableHttpClient client = HttpClients.createDefault();
 
-        HttpPost createUserRequest = new HttpPost( "http://localhost:9090/users");
-        createUserRequest.setHeader("Content-Type", "application/json");
-        createUserRequest.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
+        HttpPost request = new HttpPost( "http://localhost:9090/users");
+        request.setHeader("Content-Type", "application/json");
+        request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
 
-        CloseableHttpResponse response = client.execute(createUserRequest);
+        CloseableHttpResponse response = client.execute(request);
 
         assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
         assertEquals("{\"username\":\"johnny\"}", EntityUtils.toString(response.getEntity()));
@@ -89,6 +94,7 @@ public class IntegrationTests {
     }
 
     @Test
+    @Order(2)
     void loginUserEndpointTest() throws IOException {
 
         CloseableHttpClient client = HttpClients.createDefault();
@@ -97,9 +103,10 @@ public class IntegrationTests {
         request.setHeader("Content-Type", "application/json");
         request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
 
-        CloseableHttpResponse reponse = client.execute(request);
+        CloseableHttpResponse response = client.execute(request);
 
-        assertEquals(HttpStatus.SC_OK, reponse.getStatusLine().getStatusCode());
+        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+        assertTrue(response.getFirstHeader("Authorization").getValue().startsWith("Bearer"));
 
         client.close();
     }
