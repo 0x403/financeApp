@@ -38,23 +38,23 @@ public class TransactionController {
 
     // update existing asset
     @PutMapping("/assets/{id}")
-    public String putAsset(@PathVariable String id) {
-        return "";
+    public Asset putAsset(@PathVariable String id) {
+        // TODO
     }
 
     // get product by id
     @GetMapping("/products/{id}")
-    public Asset getProduct(@PathVariable String id) {
+    public Product getProduct(@PathVariable String id) {
         // TODO
     }
 
     // update product by id
     @PutMapping("/products/{id}")
-    public Asset putProduct(@PathVariable String id) {
+    public Product putProduct(@PathVariable String id) {
         // TODO
     }
 
-    // search data by prhase
+    // search data by phrase
     @GetMapping("/search/{phrase}")
     public List<AbstractAsset> searchAsset(@PathVariable String phrase) {
         // TODO
