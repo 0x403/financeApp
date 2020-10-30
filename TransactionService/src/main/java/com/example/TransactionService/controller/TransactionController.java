@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping
@@ -11,17 +12,17 @@ public class TransactionController {
 
     // get assets || products || trades
     @GetMapping("/assets")
-    public Page<Asset> getAssets() {
+    public Page<Asset> getAssets(@RequestParam Optional<Integer> page) {
         // TODO
     }
 
     @GetMapping("/products")
-    public Page<Product> getProducts() {
+    public Page<Product> getProducts(@RequestParam Optional<Integer> page) {
         // TODO
     }
 
     @GetMapping("/trades")
-    public Page<Trade> getTrades() {
+    public Page<Trade> getTrades(@RequestParam Optional<Integer> page) {
         // TODO
     }
 
