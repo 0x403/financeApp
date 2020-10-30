@@ -1,5 +1,6 @@
 package com.example.TransactionService.controller;
 
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,18 +11,18 @@ public class TransactionController {
 
     // get assets || products || trades
     @GetMapping("/assets")
-    public List<Asset> getAssets() {
-        return new List<Asset>();
+    public Page<Asset> getAssets() {
+        // TODO
     }
 
     @GetMapping("/products")
-    public List<Product> getProducts() {
-        return new List<Product>();
+    public Page<Product> getProducts() {
+        // TODO
     }
 
     @GetMapping("/trades")
-    public List<Trade> getTrades() {
-        return new List<Trade>();
+    public Page<Trade> getTrades() {
+        // TODO
     }
 
     // add new asset
@@ -56,7 +57,7 @@ public class TransactionController {
 
     // search data by phrase
     @GetMapping("/search/{phrase}")
-    public List<AbstractAsset> searchAsset(@PathVariable String phrase) {
+    public Page<AbstractContent> searchAsset(@PathVariable String phrase) {
         // TODO
     }
 
