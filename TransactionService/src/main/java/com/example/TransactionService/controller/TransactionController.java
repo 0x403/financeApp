@@ -58,7 +58,7 @@ public class TransactionController {
 
     // search data by phrase
     @GetMapping("/search/{phrase}")
-    public Page<AbstractContent> searchAsset(@PathVariable String phrase) {
+    public Page<AbstractContent> searchAsset(@PathVariable String phrase, @RequestParam Optional<Integer> page) {
         // TODO
     }
 
