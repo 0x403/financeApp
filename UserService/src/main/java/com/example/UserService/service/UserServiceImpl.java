@@ -1,6 +1,5 @@
 package com.example.UserService.service;
 
-import com.example.UserService.dto.UserDto;
 import com.example.UserService.entity.UserEntity;
 import com.example.UserService.repository.UserRepository;
 import org.modelmapper.ModelMapper;
@@ -10,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import userServiceModels.UserDto;
 
 import java.util.ArrayList;
 

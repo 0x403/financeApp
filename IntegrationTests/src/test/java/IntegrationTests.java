@@ -1,4 +1,3 @@
-import com.example.UserService.dto.UserDto;
 import com.example.UserService.entity.UserEntity;
 import com.example.UserService.repository.UserRepository;
 import com.example.UserService.service.UserServiceImpl;

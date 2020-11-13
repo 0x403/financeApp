@@ -1,12 +1,12 @@
 package com.example.UserService.controller;
 
-import com.example.UserService.dto.UserDto;
-import com.example.UserService.model.UserRequestModel;
-import com.example.UserService.model.UserResponseModel;
 import com.example.UserService.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import userServiceModels.UserDto;
+import userServiceModels.UserRequestModel;
+import userServiceModels.UserResponseModel;
 
 @RestController
 @RequestMapping("/users")

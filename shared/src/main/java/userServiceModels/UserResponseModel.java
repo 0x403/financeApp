@@ -1,4 +1,4 @@
-package com.example.UserService.model;
+package userServiceModels;
 
 import lombok.Getter;
 import lombok.Setter;
