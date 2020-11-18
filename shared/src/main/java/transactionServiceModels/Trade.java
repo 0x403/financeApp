@@ -1,11 +1,13 @@
 package transactionServiceModels;
 
 import lombok.Data;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@Document(indexName = "trades")
 public class Trade extends AbstractContent {
 
     private String user;

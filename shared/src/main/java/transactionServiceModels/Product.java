@@ -1,10 +1,14 @@
 package transactionServiceModels;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
+@Document(indexName = "products")
 public class Product extends AbstractContent {
 
     private ProductTerms productTerms;

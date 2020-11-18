@@ -1,11 +1,15 @@
 package transactionServiceModels;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.time.LocalDateTime;
 
-@Data
-public class Asset {
+@Getter
+@Setter
+@Document(indexName = "assets")
+public class Asset extends AbstractContent {
 
     private String name;
 
