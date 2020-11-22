@@ -4,17 +4,17 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.elasticsearch.annotations.Document;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Getter
 @Setter
 @Document(indexName = "productTerms")
 public class ProductTerms {
 
-    private LocalDateTime firstTradingDate;
-    private LocalDateTime lastTradingDate;
+    private ZonedDateTime firstTradingDate;
+    private ZonedDateTime lastTradingDate;
     private int minimumTradingSize;
     private String denominated;
-    private LocalDateTime expirationDate;
+    private ZonedDateTime expirationDate;
 
 }

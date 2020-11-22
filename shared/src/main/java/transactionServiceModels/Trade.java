@@ -3,7 +3,7 @@ package transactionServiceModels;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Data
@@ -16,9 +16,9 @@ public class Trade extends AbstractContent {
 
     private String direction;
 
-    private LocalDateTime createdTime;
+    private ZonedDateTime createdTime;
 
-    private LocalDateTime lastUpdateTime;
+    private ZonedDateTime lastUpdateTime;
 
     private String status;
 
