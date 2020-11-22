@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface TransactionService {
 
-    String createUser(String reqBodyJSON) throws IOException;
+    String createUser(String reqBody) throws IOException;
 
     Asset getAssetById(String id);
 
