@@ -7,24 +7,25 @@ import transactionServiceModels.Trade;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
 
-    String createUser(String reqBody) throws IOException;
+    CompletableFuture<String> createUser(Asset reqAsset) throws IOException;
 
-    Asset getAssetById(String id);
+    CompletableFuture<Asset> getAssetById(String id);
 
-    Asset updateAsset(String id, String reqBody) throws IOException;
+    CompletableFuture<Asset> updateAsset(String id, String reqBody) throws IOException;
 
-    Product getProductById(String id) throws IOException;
+    CompletableFuture<Product> getProductById(String id) throws IOException;
 
-    Product updateProduct(String id, String reqBody) throws IOException;
+    CompletableFuture<Product> updateProduct(String id, String reqBody) throws IOException;
 
-    List<Asset> searchAssets(String phrase, Integer page, Integer size);
+    CompletableFuture<List<AbstractContent>> searchAssets(String phrase, Integer page, Integer size);
 
-    List<Asset> getAllAssets(Integer page, Integer size);
+    CompletableFuture<List<Asset>> getAllAssets(Integer page, Integer size);
 
-    List<Product> getAllProducts(Integer page, Integer size);
+    CompletableFuture<List<Product>> getAllProducts(Integer page, Integer size);
 
-    List<Trade> getAllTrades(Integer page, Integer size);
+    CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size);
 }

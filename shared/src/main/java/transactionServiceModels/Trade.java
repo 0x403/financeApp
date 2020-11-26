@@ -1,5 +1,6 @@
 package transactionServiceModels;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Data
 @Document(indexName = "trades")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Trade extends AbstractContent {
 
     private String user;

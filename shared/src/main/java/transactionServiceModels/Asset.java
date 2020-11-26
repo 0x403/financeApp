@@ -1,5 +1,6 @@
 package transactionServiceModels;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -19,11 +20,12 @@ import java.time.format.DateTimeFormatter;
 @Getter
 @Setter
 @Document(indexName = "assets")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Asset extends AbstractContent {
 
     private String name;
 
-    private float price;
+    private Float price;
 
     @JsonDeserialize(using = ZonedDateTimeDeserializer.class)
     @JsonSerialize(using = ZonedDateTimeSerializer.class)

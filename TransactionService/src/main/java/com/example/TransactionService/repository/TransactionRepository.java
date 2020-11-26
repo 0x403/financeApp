@@ -1,13 +1,15 @@
 package com.example.TransactionService.repository;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.PlainActionFuture;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -17,14 +19,18 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
+import transactionServiceModels.AbstractContent;
 import transactionServiceModels.Asset;
 import transactionServiceModels.Product;
 import transactionServiceModels.Trade;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Repository
 public class TransactionRepository {
@@ -35,83 +41,142 @@ public class TransactionRepository {
     @Autowired
     ObjectMapper mapper;
 
-    public String saveAsset(String reqBodyJSON) {
-        PlainActionFuture<IndexResponse> future = new PlainActionFuture<>() {
+    @Async
+    public CompletableFuture<String> saveAsset(Asset reqAsset) throws JsonProcessingException {
+
+        CompletableFuture<String> indexResponseFuture = new CompletableFuture<>();
+
+        ActionListener<IndexResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(IndexResponse result) {
+                String message = result.status() + "\nID: " + result.getId();
+                indexResponseFuture.complete(message);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                indexResponseFuture.completeExceptionally(e);
             }
         };
 
-        IndexRequest request = new IndexRequest("assets").source(reqBodyJSON, XContentType.JSON);
-        client.indexAsync(request, RequestOptions.DEFAULT, future);
-        IndexResponse res = future.actionGet();
-        return res.status().toString() + "\nID: " + res.getId();
+        String reqAssetJSON = mapper.writeValueAsString(reqAsset);
 
+        IndexRequest request = new IndexRequest("assets").source(reqAssetJSON, XContentType.JSON);
+        client.indexAsync(request, RequestOptions.DEFAULT, actionListener);
+
+        return indexResponseFuture;
     }
 
-    public Asset findAssetById(String id) {
-        PlainActionFuture<GetResponse> future = new PlainActionFuture<>() {
+    @Async
+    public CompletableFuture<Asset> findAssetById(String id) {
+
+        CompletableFuture<Asset> assetFuture = new CompletableFuture<>();
+
+        ActionListener<GetResponse> actionListener = new ActionListener<>() {
+            @SneakyThrows
+            @Override
+            public void onResponse(GetResponse response) {
+                Map<String, Object> responseAssetMap = response.getSource();
+                responseAssetMap.put("id", response.getId());
+                Asset wantedAsset = mapper.convertValue(responseAssetMap, Asset.class);
+                assetFuture.complete(wantedAsset);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                assetFuture.completeExceptionally(e);
             }
         };
+
         GetRequest req = new GetRequest("assets", id);
-        client.getAsync(req, RequestOptions.DEFAULT, future);
-        GetResponse res = future.actionGet();
+        client.getAsync(req, RequestOptions.DEFAULT, actionListener);
 
-        Map<String, Object> resAssetWithId = res.getSource();
-        resAssetWithId.put("id", res.getId());
-
-        return mapper.convertValue(resAssetWithId, Asset.class);
+        return assetFuture;
     }
 
-    public Asset updateAsset(String id, String reqBody) {
-        PlainActionFuture<UpdateResponse> future = new PlainActionFuture<>() {
+    @Async
+    public CompletableFuture<Asset> updateAsset(String id, Asset updatedFields) throws JsonProcessingException {
+
+        CompletableFuture<Asset> assetFuture = new CompletableFuture<>();
+
+        ActionListener<UpdateResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(UpdateResponse response) {
+                Map<String, Object> responseAssetMap = response.getGetResult().getSource();
+                responseAssetMap.put("id", id);
+                assetFuture.complete(mapper.convertValue(responseAssetMap, Asset.class));
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                assetFuture.completeExceptionally(e);
             }
         };
-        UpdateRequest req = new UpdateRequest("assets", id).doc(reqBody, XContentType.JSON).fetchSource(true);
-        client.updateAsync(req, RequestOptions.DEFAULT, future);
-        UpdateResponse res = future.actionGet();
 
-        Map<String, Object> resModelWithId = res.getGetResult().getSource();
-        resModelWithId.put("id", id);
-        return mapper.convertValue(resModelWithId, Asset.class);
+        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
+        UpdateRequest req = new UpdateRequest("assets", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
+        client.updateAsync(req, RequestOptions.DEFAULT, actionListener);
+
+        return assetFuture;
     }
 
-    public Product findProductById(String id) {
-        PlainActionFuture<GetResponse> future = new PlainActionFuture<>() {
+    @Async
+    public CompletableFuture<Product> findProductById(String id) {
+
+        CompletableFuture<Product> productFuture = new CompletableFuture<>();
+
+        ActionListener<GetResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(GetResponse result) {
+                Map<String, Object> wantedProductMap = result.getSource();
+                wantedProductMap.put("id", result.getId());
+                Product wantedProduct = mapper.convertValue(wantedProductMap, Product.class);
+                productFuture.complete(wantedProduct);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                productFuture.completeExceptionally(e);
             }
         };
+
         GetRequest req = new GetRequest("products", id);
-        client.getAsync(req, RequestOptions.DEFAULT, future);
-        GetResponse res = future.actionGet();
+        client.getAsync(req, RequestOptions.DEFAULT, actionListener);
 
-        return mapper.convertValue(res.getSource(), Product.class);
+        return productFuture;
     }
 
-    public Product updateProduct(String id, String reqBody) {
-        PlainActionFuture<UpdateResponse> future = new PlainActionFuture<>() {
+    @Async
+    public CompletableFuture<Product> updateProduct(String id, Product updatedFields) throws IOException {
+
+        CompletableFuture<Product> productFuture = new CompletableFuture<>();
+
+        ActionListener<UpdateResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(UpdateResponse response) {
+                Map<String, Object> responseProductMap = response.getGetResult().getSource();
+                responseProductMap.put("id", id);
+                productFuture.complete(mapper.convertValue(responseProductMap, Product.class));
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                productFuture.completeExceptionally(e);
             }
         };
-        UpdateRequest req = new UpdateRequest("products", id).doc(reqBody, XContentType.JSON).fetchSource(true);
-        client.updateAsync(req, RequestOptions.DEFAULT, future);
-        UpdateResponse res = future.actionGet();
 
-        return mapper.convertValue(res.getGetResult().getSource(), Product.class);
+        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
+        UpdateRequest req = new UpdateRequest("products", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
+        client.updateAsync(req, RequestOptions.DEFAULT, actionListener);
+
+        return productFuture;
     }
 
-    public List<Asset> findAssetsByPhrase(String phrase, int page, int size) {
+    @Async
+    public CompletableFuture<List<AbstractContent>> findAssetsByPhrase(String phrase, int page, int size) {
+
+        CompletableFuture<List<AbstractContent>> assetsListFuture = new CompletableFuture<>();
+
         SearchRequest searchRequest = new SearchRequest();
 
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -121,28 +186,37 @@ public class TransactionRepository {
 
         searchRequest.source(searchSourceBuilder);
 
-        PlainActionFuture<SearchResponse> future = new PlainActionFuture<>() {
+        ActionListener<SearchResponse> future = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<AbstractContent> assetsList = new ArrayList<>();
+
+                SearchHit[] hits = response.getHits().getHits();
+                for(SearchHit hit : hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    map.put("id", hit.getId());
+                    assetsList.add(mapper.convertValue(map, Asset.class));
+                }
+
+                assetsListFuture.complete(assetsList);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                assetsListFuture.completeExceptionally(e);
             }
         };
+
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, future);
-        SearchResponse res = future.actionGet();
 
-        List<Asset> assetList = new ArrayList<>();
-
-        SearchHit[] hits = res.getHits().getHits();
-        for(SearchHit hit : hits) {
-            Map<String, Object> map = hit.getSourceAsMap();
-            map.put("id", hit.getId());
-            assetList.add(mapper.convertValue(map, Asset.class));
-        }
-
-        return assetList;
+        return assetsListFuture;
     }
 
-    public List<Asset> findAllAssets(int page, int size) {
+    @Async
+    public CompletableFuture<List<Asset>> findAllAssets(int page, int size) {
+
+        CompletableFuture<List<Asset>> assetsListFuture = new CompletableFuture<>();
+
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices("assets");
 
@@ -153,28 +227,36 @@ public class TransactionRepository {
 
         searchRequest.source(searchSourceBuilder);
 
-        PlainActionFuture<SearchResponse> future = new PlainActionFuture<>() {
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Asset> assetsList = new ArrayList<>();
+
+                SearchHit[] hits = response.getHits().getHits();
+                for(SearchHit hit : hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    map.put("id", hit.getId());
+                    assetsList.add(mapper.convertValue(map, Asset.class));
+                }
+
+                assetsListFuture.complete(assetsList);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                assetsListFuture.completeExceptionally(e);
             }
         };
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, future);
-        SearchResponse res = future.actionGet();
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-        List<Asset> assetList = new ArrayList<>();
-
-        SearchHit[] hits = res.getHits().getHits();
-        for(SearchHit hit : hits) {
-            Map<String, Object> map = hit.getSourceAsMap();
-            map.put("id", hit.getId());
-            assetList.add(mapper.convertValue(map, Asset.class));
-        }
-
-        return assetList;
+        return assetsListFuture;
     }
 
-    public List<Product> findAllProducts(int page, int size) {
+    @Async
+    public CompletableFuture<List<Product>> findAllProducts(int page, int size) {
+
+        CompletableFuture<List<Product>> productsListFuture = new CompletableFuture<>();
+
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices("products");
 
@@ -185,28 +267,35 @@ public class TransactionRepository {
 
         searchRequest.source(searchSourceBuilder);
 
-        PlainActionFuture<SearchResponse> future = new PlainActionFuture<>() {
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Product> productsList = new ArrayList<>();
+
+                SearchHit[] hits = response.getHits().getHits();
+                for(SearchHit hit : hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    map.put("id", hit.getId());
+                    productsList.add(mapper.convertValue(map, Product.class));
+                }
+
+                productsListFuture.complete(productsList);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                productsListFuture.completeExceptionally(e);
             }
         };
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, future);
-        SearchResponse res = future.actionGet();
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-        List<Product> productsList = new ArrayList<>();
-
-        SearchHit[] hits = res.getHits().getHits();
-        for(SearchHit hit : hits) {
-            Map<String, Object> map = hit.getSourceAsMap();
-            map.put("id", hit.getId());
-            productsList.add(mapper.convertValue(map, Product.class));
-        }
-
-        return productsList;
+        return productsListFuture;
     }
 
-    public List<Trade> findAllTrades(int page, int size) {
+    public CompletableFuture<List<Trade>> findAllTrades(int page, int size) {
+
+        CompletableFuture<List<Trade>> tradesListFuture = new CompletableFuture<>();
+
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices("trades");
 
@@ -217,25 +306,30 @@ public class TransactionRepository {
 
         searchRequest.source(searchSourceBuilder);
 
-        PlainActionFuture<SearchResponse> future = new PlainActionFuture<>() {
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Trade> tradesList = new ArrayList<>();
+
+                SearchHit[] hits = response.getHits().getHits();
+                for(SearchHit hit : hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    map.put("id", hit.getId());
+                    tradesList.add(mapper.convertValue(map, Trade.class));
+                }
+
+                tradesListFuture.complete(tradesList);
+            }
+
             @Override
             public void onFailure(Exception e) {
-                System.out.println(e.getMessage());
+                tradesListFuture.completeExceptionally(e);
             }
         };
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, future);
-        SearchResponse res = future.actionGet();
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-        List<Trade> tradesList = new ArrayList<>();
 
-        SearchHit[] hits = res.getHits().getHits();
-        for(SearchHit hit : hits) {
-            Map<String, Object> map = hit.getSourceAsMap();
-            map.put("id", hit.getId());
-            tradesList.add(mapper.convertValue(map, Trade.class));
-        }
-
-        return tradesList;
+        return tradesListFuture;
     }
 
 }

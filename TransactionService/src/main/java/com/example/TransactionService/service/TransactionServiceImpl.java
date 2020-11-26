@@ -1,10 +1,9 @@
 package com.example.TransactionService.service;
 
 import com.example.TransactionService.repository.TransactionRepository;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import transactionServiceModels.AbstractContent;
 import transactionServiceModels.Asset;
@@ -13,10 +12,8 @@ import transactionServiceModels.Trade;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
@@ -28,70 +25,72 @@ public class TransactionServiceImpl implements TransactionService {
     TransactionRepository repo;
 
     @Override
-    public String createUser(String reqBody) throws IOException {
-        mapper.readValue(reqBody, Asset.class); // validation
-        JsonNode reqBodyJSON = mapper.readTree(reqBody);
+    @Async
+    public CompletableFuture<String> createUser(Asset reqAsset) throws IOException {
 
-        if(!(reqBodyJSON.hasNonNull("name")
-                && reqBodyJSON.hasNonNull("price")
-                && reqBodyJSON.hasNonNull("currency"))) {
+        if(reqAsset.getName() == null
+                || reqAsset.getPrice() == null
+                || reqAsset.getCurrency() == null) {
             throw new IOException("Bad JSON input");
         }
 
-        if(reqBodyJSON.has("id")) {
-            ((ObjectNode) reqBodyJSON).remove("id");
-        }
-        ((ObjectNode) reqBodyJSON).put("lastPriceTime", ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        reqAsset.setId(null);
+        reqAsset.setLastPriceTime(ZonedDateTime.now());
 
-        return repo.saveAsset(reqBodyJSON.toString());
+        return repo.saveAsset(reqAsset);
     }
 
+
     @Override
-    public Asset getAssetById(String id) {
+    @Async
+    public CompletableFuture<Asset> getAssetById(String id) {
         return repo.findAssetById(id);
     }
 
     @Override
-    public Asset updateAsset(String id, String reqBody) throws IOException {
-        Asset reqBodyAsset = mapper.readValue(reqBody, Asset.class); // validate
-        JsonNode reqBodyJSON = mapper.readTree(reqBody);
-        Iterator<Map.Entry<String, JsonNode>> fields = reqBodyJSON.fields();
+    @Async
+    public CompletableFuture<Asset> updateAsset(String id, String reqBody) throws IOException {
+        Asset reqBodyAsset = mapper.readValue(reqBody, Asset.class);
 
-        // delete empty and null values
-        while(fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
-            Object val = field.getValue();
-            String value = field.getValue().asText();
-            if(value.equals("null") || value.length() == 0) {
-                ((ObjectNode) reqBodyJSON).remove(field.getKey());
-            }
+        if(reqBodyAsset.getId() != null) {
+            reqBodyAsset.setId(null);
+        }
+        else if(reqBodyAsset.getName().equals("")) {
+            reqBodyAsset.setName(null);
+        }
+        else if(reqBodyAsset.getPrice() == 0.0) {
+            reqBodyAsset.setPrice(null);
+        }
+        else if(reqBodyAsset.getPrice() != 0.0) {
+            reqBodyAsset.setLastPriceTime(ZonedDateTime.now());
+        }
+        else if(reqBodyAsset.getPrice() == null || reqBodyAsset.getLastPriceTime() != null) {
+            reqBodyAsset.setLastPriceTime(null);
+        }
+        else if(reqBodyAsset.getCurrency().equals("")) {
+            reqBodyAsset.setCurrency(null);
         }
 
-        if(reqBodyJSON.has("id")) {
-            ((ObjectNode) reqBodyJSON).remove("id");
-        }
-        if(reqBodyJSON.has("price")) {
-            ((ObjectNode) reqBodyJSON).put("lastPriceTime", ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
-        }
-
-        return repo.updateAsset(id, reqBodyJSON.toString());
+        return repo.updateAsset(id, reqBodyAsset);
     }
 
     @Override
-    public Product getProductById(String id) throws IOException {
+    @Async
+    public CompletableFuture<Product> getProductById(String id) {
         return repo.findProductById(id);
     }
 
     @Override
-    public Product updateProduct(String id, String reqBody) throws IOException {
-        Product reqBodyProduct = mapper.readValue(reqBody, Product.class); // validation
-        JsonNode reqBodyJSON = mapper.readTree(reqBody);
+    @Async
+    public CompletableFuture<Product> updateProduct(String id, String reqBody) throws IOException {
+        Product reqBodyProduct = mapper.readValue(reqBody, Product.class);
 
-        return repo.updateProduct(id, reqBodyJSON.toString());
+        return repo.updateProduct(id, reqBodyProduct);
     }
 
     @Override
-    public List<Asset> searchAssets(String phrase, Integer page, Integer size) {
+    @Async
+    public CompletableFuture<List<AbstractContent>> searchAssets(String phrase, Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
@@ -99,7 +98,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Asset> getAllAssets(Integer page, Integer size) {
+    @Async
+    public CompletableFuture<List<Asset>> getAllAssets(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
@@ -107,7 +107,8 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Product> getAllProducts(Integer page, Integer size) {
+    @Async
+    public CompletableFuture<List<Product>> getAllProducts(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
@@ -115,7 +116,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<Trade> getAllTrades(Integer page, Integer size) {
+    public CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
