@@ -18,6 +18,11 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.suggest.Suggest;
+import org.elasticsearch.search.suggest.SuggestBuilder;
+import org.elasticsearch.search.suggest.SuggestBuilders;
+import org.elasticsearch.search.suggest.SuggestionBuilder;
+import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
@@ -31,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Repository
 public class TransactionRepository {
@@ -59,8 +65,9 @@ public class TransactionRepository {
             }
         };
 
-        String reqAssetJSON = mapper.writeValueAsString(reqAsset);
+        reqAsset.setSuggestName(reqAsset.getName().split(" "));
 
+        String reqAssetJSON = mapper.writeValueAsString(reqAsset);
         IndexRequest request = new IndexRequest("assets").source(reqAssetJSON, XContentType.JSON);
         client.indexAsync(request, RequestOptions.DEFAULT, actionListener);
 
@@ -173,7 +180,7 @@ public class TransactionRepository {
     }
 
     @Async
-    public CompletableFuture<List<AbstractContent>> findAssetsByPhrase(String phrase, int page, int size) {
+    public CompletableFuture<List<AbstractContent>> findResourcesByPhrase(String phrase, int page, int size) {
 
         CompletableFuture<List<AbstractContent>> assetsListFuture = new CompletableFuture<>();
 
@@ -195,7 +202,15 @@ public class TransactionRepository {
                 for(SearchHit hit : hits) {
                     Map<String, Object> map = hit.getSourceAsMap();
                     map.put("id", hit.getId());
-                    assetsList.add(mapper.convertValue(map, Asset.class));
+                    if(hit.getIndex().equals("assets")) {
+                        assetsList.add(mapper.convertValue(map, Asset.class));
+                    }
+                    else if(hit.getIndex().equals("products")) {
+                        assetsList.add(mapper.convertValue(map, Product.class));
+                    }
+                    else if(hit.getIndex().equals("trades")) {
+                        assetsList.add(mapper.convertValue(map, Trade.class));
+                    }
                 }
 
                 assetsListFuture.complete(assetsList);
@@ -292,6 +307,7 @@ public class TransactionRepository {
         return productsListFuture;
     }
 
+    @Async
     public CompletableFuture<List<Trade>> findAllTrades(int page, int size) {
 
         CompletableFuture<List<Trade>> tradesListFuture = new CompletableFuture<>();
@@ -330,6 +346,53 @@ public class TransactionRepository {
 
 
         return tradesListFuture;
+    }
+
+    @Async
+    public CompletableFuture<List<String>> findSuggestedAssets(String keyword) {
+
+        CompletableFuture<List<String>> suggestedAssetsFuture = new CompletableFuture<>();
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("assets");
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(5);
+        SuggestionBuilder completionSuggestionBuilder = SuggestBuilders.completionSuggestion("suggestName").prefix(keyword);
+        SuggestBuilder suggestBuilder = new SuggestBuilder();
+        suggestBuilder.addSuggestion("suggest-assets", completionSuggestionBuilder);
+        searchSourceBuilder.suggest(suggestBuilder);
+        searchRequest.source(searchSourceBuilder);
+
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                ArrayList<String> suggestedAssetsNames = new ArrayList<>();
+
+                Suggest suggest = response.getSuggest();
+                CompletionSuggestion completionSuggestion = suggest.getSuggestion("suggest-assets");
+                for(CompletionSuggestion.Entry entry: completionSuggestion.getEntries()) {
+                    for(CompletionSuggestion.Entry.Option option: entry) {
+                        String suggestedAssetName = option.getText().string();
+                        suggestedAssetsNames.add(suggestedAssetName);
+                    }
+                }
+
+                List<String> suggestedAssetsNamesWithoutDuplicates =
+                        suggestedAssetsNames.stream().distinct().collect(Collectors.toList());
+
+                suggestedAssetsFuture.complete(suggestedAssetsNamesWithoutDuplicates);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                suggestedAssetsFuture.completeExceptionally(e);
+            }
+        };
+
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
+
+        return suggestedAssetsFuture;
+
     }
 
 }

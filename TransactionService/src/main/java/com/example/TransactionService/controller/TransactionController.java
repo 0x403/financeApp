@@ -56,10 +56,10 @@ public class TransactionController {
     }
 
 //     search data by phrase
-    @GetMapping("/search/{phrase}")
-    public CompletableFuture<List<AbstractContent>> searchAsset(@PathVariable String phrase, @RequestParam(required = false) Integer page,
+    @GetMapping("/search")
+    public CompletableFuture<List<AbstractContent>> searchAsset(@RequestParam String phrase, @RequestParam(required = false) Integer page,
                                    @RequestParam(required = false) Integer size) {
-        return transactionService.searchAssets(phrase, page, size);
+        return transactionService.searchResourcesByPhrase(phrase, page, size);
     }
 
     // get assets || products || trades
@@ -76,6 +76,11 @@ public class TransactionController {
     @GetMapping("/trades")
     public CompletableFuture<List<Trade>> getTrades(@RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size) {
         return transactionService.getAllTrades(page, size);
+    }
+
+    @GetMapping("/assets/suggest")
+    public CompletableFuture<List<String>> getSuggestedAssets(@RequestParam String keyword) {
+        return transactionService.getSuggestedAssets(keyword);
     }
 
 }

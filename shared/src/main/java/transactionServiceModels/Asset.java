@@ -1,6 +1,7 @@
 package transactionServiceModels;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -24,6 +25,9 @@ import java.time.format.DateTimeFormatter;
 public class Asset extends AbstractContent {
 
     private String name;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String[] suggestName;
 
     private Float price;
 

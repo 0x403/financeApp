@@ -90,11 +90,11 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Async
-    public CompletableFuture<List<AbstractContent>> searchAssets(String phrase, Integer page, Integer size) {
+    public CompletableFuture<List<AbstractContent>> searchResourcesByPhrase(String phrase, Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
-        return repo.findAssetsByPhrase(phrase, page, size);
+        return repo.findResourcesByPhrase(phrase, page, size);
     }
 
     @Override
@@ -116,11 +116,18 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
+    @Async
     public CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
 
         return repo.findAllTrades(page, size);
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<List<String>> getSuggestedAssets(String keyword) {
+        return repo.findSuggestedAssets(keyword);
     }
 
     private Integer sizeValidator(Integer size) {

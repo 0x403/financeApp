@@ -21,11 +21,13 @@ public interface TransactionService {
 
     CompletableFuture<Product> updateProduct(String id, String reqBody) throws IOException;
 
-    CompletableFuture<List<AbstractContent>> searchAssets(String phrase, Integer page, Integer size);
+    CompletableFuture<List<AbstractContent>> searchResourcesByPhrase(String phrase, Integer page, Integer size);
 
     CompletableFuture<List<Asset>> getAllAssets(Integer page, Integer size);
 
     CompletableFuture<List<Product>> getAllProducts(Integer page, Integer size);
 
     CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size);
+
+    CompletableFuture<List<String>> getSuggestedAssets(String keyword);
 }
