@@ -34,7 +34,6 @@ import transactionServiceModels.Trade;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -435,48 +434,4 @@ public class TransactionRepository {
 
         return assetsAndProductsNamesFuture;
     }
-
-    @Async
-    private CompletableFuture<List<String>> findProductsNamesByAssetsNames(List<String> assetsNamesList) {
-        CompletableFuture<List<String>> assetsListFuture = new CompletableFuture<>();
-
-        SearchRequest searchRequest = new SearchRequest();
-        searchRequest.indices("products");
-
-        StringBuilder assetsNames = new StringBuilder();
-        for(String assetName: assetsNamesList) {
-            assetsNames.append(assetName + " ");
-        }
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.size(4);
-        MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("assetsList", assetsNames.toString());
-        searchSourceBuilder.query(matchQueryBuilder);
-        searchRequest.source(searchSourceBuilder);
-
-        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
-            @Override
-            public void onResponse(SearchResponse response) {
-                List<String> productsNamesList = new ArrayList<>();
-
-                SearchHit[] hits = response.getHits().getHits();
-                for (SearchHit hit : hits) {
-                    Map<String, Object> map = hit.getSourceAsMap();
-                    productsNamesList.add((String) map.get("name"));
-                }
-
-                assetsListFuture.complete(productsNamesList);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                assetsListFuture.completeExceptionally(e);
-            }
-        };
-
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
-
-        return assetsListFuture;
-    }
-
 }
