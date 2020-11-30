@@ -15,6 +15,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -33,10 +34,12 @@ import transactionServiceModels.Trade;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Repository
 public class TransactionRepository {
@@ -193,27 +196,27 @@ public class TransactionRepository {
 
         searchRequest.source(searchSourceBuilder);
 
-        ActionListener<SearchResponse> future = new ActionListener<>() {
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
             @Override
             public void onResponse(SearchResponse response) {
-                List<AbstractContent> assetsList = new ArrayList<>();
+                List<AbstractContent> resourcesList = new ArrayList<>();
 
                 SearchHit[] hits = response.getHits().getHits();
                 for(SearchHit hit : hits) {
                     Map<String, Object> map = hit.getSourceAsMap();
                     map.put("id", hit.getId());
                     if(hit.getIndex().equals("assets")) {
-                        assetsList.add(mapper.convertValue(map, Asset.class));
+                        resourcesList.add(mapper.convertValue(map, Asset.class));
                     }
                     else if(hit.getIndex().equals("products")) {
-                        assetsList.add(mapper.convertValue(map, Product.class));
+                        resourcesList.add(mapper.convertValue(map, Product.class));
                     }
                     else if(hit.getIndex().equals("trades")) {
-                        assetsList.add(mapper.convertValue(map, Trade.class));
+                        resourcesList.add(mapper.convertValue(map, Trade.class));
                     }
                 }
 
-                assetsListFuture.complete(assetsList);
+                assetsListFuture.complete(resourcesList);
             }
 
             @Override
@@ -222,7 +225,7 @@ public class TransactionRepository {
             }
         };
 
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, future);
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
         return assetsListFuture;
     }
@@ -349,14 +352,14 @@ public class TransactionRepository {
     }
 
     @Async
-    public CompletableFuture<List<String>> findSuggestedAssets(String keyword) {
+    public CompletableFuture<List<String>> findSuggestedAssetsAndProducts(String keyword) {
 
-        CompletableFuture<List<String>> suggestedAssetsFuture = new CompletableFuture<>();
+        CompletableFuture<List<String>> assetsAndProductsNamesFuture = new CompletableFuture<>();
 
         SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices("assets");
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.size(5);
+//        searchSourceBuilder.size(3); // returned size, default == 5
         SuggestionBuilder completionSuggestionBuilder = SuggestBuilders.completionSuggestion("suggestName").prefix(keyword);
         SuggestBuilder suggestBuilder = new SuggestBuilder();
         suggestBuilder.addSuggestion("suggest-assets", completionSuggestionBuilder);
@@ -379,20 +382,101 @@ public class TransactionRepository {
 
                 List<String> suggestedAssetsNamesWithoutDuplicates =
                         suggestedAssetsNames.stream().distinct().collect(Collectors.toList());
+                if(suggestedAssetsNamesWithoutDuplicates.size() > 3) {
+                    suggestedAssetsNamesWithoutDuplicates.subList(0, 3);
+                }
 
-                suggestedAssetsFuture.complete(suggestedAssetsNamesWithoutDuplicates);
+                // SEARCH PRODUCTS BY ASSET NAME
+                SearchRequest searchRequest = new SearchRequest();
+                searchRequest.indices("products");
+
+                StringBuilder assetsNames = new StringBuilder();
+                for(String assetName: suggestedAssetsNamesWithoutDuplicates) {
+                    assetsNames.append(assetName + " ");
+                }
+
+                SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+                searchSourceBuilder.size(4);
+                MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("assetsList", assetsNames.toString());
+                searchSourceBuilder.query(matchQueryBuilder);
+                searchRequest.source(searchSourceBuilder);
+
+                ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+                    @Override
+                    public void onResponse(SearchResponse response) {
+                        List<String> productsNamesList = new ArrayList<>();
+
+                        SearchHit[] hits = response.getHits().getHits();
+                        for (SearchHit hit : hits) {
+                            Map<String, Object> map = hit.getSourceAsMap();
+                            productsNamesList.add((String) map.get("name"));
+                        }
+
+                        // COMBINE ASSETS' NAMES AND PRODUCTS' NAMES TO SINGLE LIST
+                        assetsAndProductsNamesFuture.complete(Stream.concat(suggestedAssetsNamesWithoutDuplicates.stream(), productsNamesList.stream()).collect(Collectors.toList()));
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        assetsAndProductsNamesFuture.completeExceptionally(e);
+                    }
+                };
+
+                client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
             }
 
             @Override
             public void onFailure(Exception e) {
-                suggestedAssetsFuture.completeExceptionally(e);
+                assetsAndProductsNamesFuture.completeExceptionally(e);
             }
         };
 
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-        return suggestedAssetsFuture;
+        return assetsAndProductsNamesFuture;
+    }
 
+    @Async
+    private CompletableFuture<List<String>> findProductsNamesByAssetsNames(List<String> assetsNamesList) {
+        CompletableFuture<List<String>> assetsListFuture = new CompletableFuture<>();
+
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("products");
+
+        StringBuilder assetsNames = new StringBuilder();
+        for(String assetName: assetsNamesList) {
+            assetsNames.append(assetName + " ");
+        }
+
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.size(4);
+        MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("assetsList", assetsNames.toString());
+        searchSourceBuilder.query(matchQueryBuilder);
+        searchRequest.source(searchSourceBuilder);
+
+        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<String> productsNamesList = new ArrayList<>();
+
+                SearchHit[] hits = response.getHits().getHits();
+                for (SearchHit hit : hits) {
+                    Map<String, Object> map = hit.getSourceAsMap();
+                    productsNamesList.add((String) map.get("name"));
+                }
+
+                assetsListFuture.complete(productsNamesList);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                assetsListFuture.completeExceptionally(e);
+            }
+        };
+
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
+
+        return assetsListFuture;
     }
 
 }

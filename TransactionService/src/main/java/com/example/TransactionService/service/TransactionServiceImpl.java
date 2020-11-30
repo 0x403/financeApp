@@ -126,8 +126,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Async
-    public CompletableFuture<List<String>> getSuggestedAssets(String keyword) {
-        return repo.findSuggestedAssets(keyword);
+    public CompletableFuture<List<String>> getSuggestedAssetsAndProducts(String keyword) {
+        return repo.findSuggestedAssetsAndProducts(keyword);
     }
 
     private Integer sizeValidator(Integer size) {

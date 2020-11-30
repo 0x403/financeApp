@@ -13,6 +13,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Product extends AbstractContent {
 
+    private String name;
+
     private ProductTerms productTerms;
 
     private List<Asset> assetsList;

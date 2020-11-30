@@ -29,5 +29,5 @@ public interface TransactionService {
 
     CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size);
 
-    CompletableFuture<List<String>> getSuggestedAssets(String keyword);
+    CompletableFuture<List<String>> getSuggestedAssetsAndProducts(String keyword);
 }

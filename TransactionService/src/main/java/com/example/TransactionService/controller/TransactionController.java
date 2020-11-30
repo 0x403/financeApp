@@ -78,9 +78,9 @@ public class TransactionController {
         return transactionService.getAllTrades(page, size);
     }
 
-    @GetMapping("/assets/suggest")
+    @GetMapping("/resources/suggest")
     public CompletableFuture<List<String>> getSuggestedAssets(@RequestParam String keyword) {
-        return transactionService.getSuggestedAssets(keyword);
+        return transactionService.getSuggestedAssetsAndProducts(keyword);
     }
 
 }
