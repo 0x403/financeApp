@@ -74,51 +74,66 @@ public class IntegrationTests {
 //
 //    }
 
-    @Test
-    @Order(1)
-    void createUserEndpointTest() throws IOException {
-
-        CloseableHttpClient client = HttpClients.createDefault();
-
-        HttpPost request = new HttpPost( "http://localhost:9090/users");
-        request.setHeader("Content-Type", "application/json");
-        request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
-
-        CloseableHttpResponse response = client.execute(request);
-
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        assertEquals("{\"username\":\"johnny\"}", EntityUtils.toString(response.getEntity()));
-
-        client.close();
-    }
-
-    @Test
-    @Order(2)
-    void loginUserEndpointTest() throws IOException {
-
-        CloseableHttpClient client = HttpClients.createDefault();
-
-        HttpPost request = new HttpPost( "http://localhost:9090/login");
-        request.setHeader("Content-Type", "application/json");
-        request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
-
-        CloseableHttpResponse response = client.execute(request);
-
-        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-        assertTrue(response.getFirstHeader("Authorization").getValue().startsWith("Bearer"));
-
-        client.close();
-    }
-
 //    @Test
-//    void getTransactionTestEndpoint() throws IOException {
+//    @Order(1)
+//    void createUserEndpointTest() throws IOException {
 //
-//        HttpGet request = new HttpGet( "http://localhost:9090/transactions/nickname");
+//        CloseableHttpClient client = HttpClients.createDefault();
+//
+//        HttpPost request = new HttpPost( "http://localhost:9091/users");
 //        request.setHeader("Content-Type", "application/json");
+//        request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
 //
-//        HttpResponse httpResponse = HttpClientBuilder.create().build().execute( request );
+//        CloseableHttpResponse response = client.execute(request);
 //
-//        assertEquals(HttpStatus.SC_OK, httpResponse.getStatusLine().getStatusCode());
+//        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+//        assertEquals("{\"username\":\"johnny\"}", EntityUtils.toString(response.getEntity()));
+//
+//        client.close();
 //    }
+//
+//    @Test
+//    @Order(2)
+//    void loginUserEndpointTest() throws IOException {
+//
+//        CloseableHttpClient client = HttpClients.createDefault();
+//
+//        HttpPost request = new HttpPost( "http://localhost:9091/login");
+//        request.setHeader("Content-Type", "application/json");
+//        request.setEntity(new StringEntity("{\"username\":\"johnny\",\"password\":\"123\"}"));
+//
+//        CloseableHttpResponse response = client.execute(request);
+//
+//        assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+//        assertTrue(response.getFirstHeader("Authorization").getValue().startsWith("Bearer"));
+//
+//        client.close();
+//    }
+
+    @Test
+    void createAssetEndpointTest() throws IOException {
+
+        CloseableHttpClient client = HttpClients.createDefault();
+
+        String asset = new StringBuilder()
+                .append("{")
+                .append("\"name\": \"stock that everyone want to buy\",")
+                .append("\"price\": 6.55,")
+                .append("\"currency\": \"PLN\"")
+                .append("}")
+                .toString();
+
+        System.out.println(asset);
+
+        HttpPost request = new HttpPost( "http://localhost:9090/assets");
+        request.setHeader("Content-Type", "application/json");
+        request.setEntity(new StringEntity(asset));
+
+        HttpResponse httpResponse = client.execute(request);
+
+        assertEquals(HttpStatus.SC_OK, httpResponse.getStatusLine().getStatusCode());
+
+        client.close();
+    }
 
 }
