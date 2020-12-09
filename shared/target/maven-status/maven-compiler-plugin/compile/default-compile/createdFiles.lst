@@ -1,0 +1,11 @@
+userServiceModels\UserResponseModel.class
+transactionServiceModels\AbstractContent.class
+transactionServiceModels\ProductTerms.class
+transactionServiceModels\Trade.class
+userServiceModels\UserDto.class
+transactionServiceModels\Asset.class
+transactionServiceModels\Price.class
+transactionServiceModels\ZonedDateTimeDeserializer.class
+transactionServiceModels\Product.class
+transactionServiceModels\ZonedDateTimeSerializer.class
+userServiceModels\UserRequestModel.class

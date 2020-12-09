@@ -43,4 +43,11 @@ public class LocalElasticsearch {
             super(InternalSettingsPreparer.prepareEnvironment(settings, new HashMap<>(), null, null), plugins, false);
         }
     }
+
+    public static void main(String[] args) throws InterruptedException {
+        start();
+        while(true) {
+            Thread.sleep(1000);
+        }
+    }
 }

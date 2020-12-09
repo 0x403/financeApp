@@ -3,7 +3,14 @@ package com.example.TransactionService.controller;
 import com.example.TransactionService.service.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import transactionServiceModels.AbstractContent;
 import transactionServiceModels.Asset;
 import transactionServiceModels.Product;
@@ -28,7 +35,7 @@ public class TransactionController {
     @PostMapping("/assets")
     public CompletableFuture<String> postAsset(@RequestBody String reqBody) throws IOException {
         Asset reqBodyAsset = mapper.readValue(reqBody, Asset.class);
-        return transactionService.createUser(reqBodyAsset);
+        return transactionService.createAsset(reqBodyAsset);
     }
 
     // get asset by id
@@ -58,7 +65,7 @@ public class TransactionController {
 //     search data by phrase
     @GetMapping("/search")
     public CompletableFuture<List<AbstractContent>> searchAsset(@RequestParam String phrase, @RequestParam(required = false) Integer page,
-                                   @RequestParam(required = false) Integer size) {
+                                                                @RequestParam(required = false) Integer size) {
         return transactionService.searchResourcesByPhrase(phrase, page, size);
     }
 

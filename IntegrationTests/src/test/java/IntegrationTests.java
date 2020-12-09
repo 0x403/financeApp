@@ -123,7 +123,7 @@ public class IntegrationTests {
                 .append("}")
                 .toString();
 
-        System.out.println(asset);
+//        System.out.println(asset);
 
         HttpPost request = new HttpPost( "http://localhost:9090/assets");
         request.setHeader("Content-Type", "application/json");

@@ -1,0 +1,5 @@
+TestedApps.class
+TestPlatform.class
+LocalElasticsearch$PluginConfigurableNode.class
+IntegrationTests.class
+LocalElasticsearch.class

@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface TransactionService {
 
-    CompletableFuture<String> createUser(Asset reqAsset) throws IOException;
+    CompletableFuture<String> createAsset(Asset reqAsset) throws IOException;
 
     CompletableFuture<Asset> getAssetById(String id);
 

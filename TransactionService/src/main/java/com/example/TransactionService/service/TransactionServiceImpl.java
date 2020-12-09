@@ -3,7 +3,6 @@ package com.example.TransactionService.service;
 import com.example.TransactionService.repository.TransactionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import transactionServiceModels.AbstractContent;
 import transactionServiceModels.Asset;
@@ -25,8 +24,7 @@ public class TransactionServiceImpl implements TransactionService {
     TransactionRepository repo;
 
     @Override
-    @Async
-    public CompletableFuture<String> createUser(Asset reqAsset) throws IOException {
+    public CompletableFuture<String> createAsset(Asset reqAsset) throws IOException {
 
         if(reqAsset.getName() == null
                 || reqAsset.getPrice() == null
@@ -42,13 +40,11 @@ public class TransactionServiceImpl implements TransactionService {
 
 
     @Override
-    @Async
     public CompletableFuture<Asset> getAssetById(String id) {
         return repo.findAssetById(id);
     }
 
     @Override
-    @Async
     public CompletableFuture<Asset> updateAsset(String id, String reqBody) throws IOException {
         Asset reqBodyAsset = mapper.readValue(reqBody, Asset.class);
 
@@ -75,13 +71,11 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<Product> getProductById(String id) {
         return repo.findProductById(id);
     }
 
     @Override
-    @Async
     public CompletableFuture<Product> updateProduct(String id, String reqBody) throws IOException {
         Product reqBodyProduct = mapper.readValue(reqBody, Product.class);
 
@@ -89,7 +83,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<List<AbstractContent>> searchResourcesByPhrase(String phrase, Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
@@ -98,7 +91,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<List<Asset>> getAllAssets(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
@@ -107,7 +99,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<List<Product>> getAllProducts(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
@@ -116,7 +107,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<List<Trade>> getAllTrades(Integer page, Integer size) {
         size = sizeValidator(size);
         page = pageValidator(page);
@@ -125,7 +115,6 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    @Async
     public CompletableFuture<List<String>> getSuggestedAssetsAndProducts(String keyword) {
         return repo.findSuggestedAssetsAndProducts(keyword);
     }
