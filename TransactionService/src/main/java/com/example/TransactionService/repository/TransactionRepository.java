@@ -51,16 +51,19 @@ public class TransactionRepository {
 
         CompletableFuture<String> indexResponseFuture = new CompletableFuture<>();
 
-        ActionListener<IndexResponse> actionListener = (ElasticActionListener<IndexResponse>) (response) -> {
-            String message = response.status() + "\nID: " + response.getId();
-            indexResponseFuture.complete(message);
+        String reqAssetJSON = mapper.writeValueAsString(reqAsset);
+        IndexRequest indexRequest = new IndexRequest("assets").source(reqAssetJSON, XContentType.JSON);
+        ActionListener<IndexResponse> actionListener = new ElasticActionListener<IndexResponse, String>(indexResponseFuture) {
+            @Override
+            public void onResponse(IndexResponse response) {
+                String message = response.status() + "\nID: " + response.getId();
+                this.getFuture().complete(message);
+            }
         };
 
         reqAsset.setSuggestName(reqAsset.getName().split(" "));
 
-        String reqAssetJSON = mapper.writeValueAsString(reqAsset);
-        IndexRequest request = new IndexRequest("assets").source(reqAssetJSON, XContentType.JSON);
-        client.indexAsync(request, RequestOptions.DEFAULT, actionListener);
+        client.indexAsync(indexRequest, RequestOptions.DEFAULT, actionListener);
 
         return indexResponseFuture;
     }
@@ -69,15 +72,18 @@ public class TransactionRepository {
 
         CompletableFuture<Asset> assetFuture = new CompletableFuture<>();
 
-        ActionListener<GetResponse> actionListener = (ElasticActionListener<GetResponse>) (response) -> {
-            Map<String, Object> responseAssetMap = response.getSource();
-            responseAssetMap.put("id", response.getId());
-            Asset wantedAsset = mapper.convertValue(responseAssetMap, Asset.class);
-            assetFuture.complete(wantedAsset);
+        GetRequest getRequest = new GetRequest("assets", id);
+        ActionListener<GetResponse> actionListener = new ElasticActionListener<GetResponse, Asset>(assetFuture) {
+            @Override
+            public void onResponse(GetResponse response) {
+                Map<String, Object> responseAssetMap = response.getSource();
+                responseAssetMap.put("id", response.getId());
+                Asset wantedAsset = mapper.convertValue(responseAssetMap, Asset.class);
+                this.getFuture().complete(wantedAsset);
+            }
         };
 
-        GetRequest req = new GetRequest("assets", id);
-        client.getAsync(req, RequestOptions.DEFAULT, actionListener);
+        client.getAsync(getRequest, RequestOptions.DEFAULT, actionListener);
 
         return assetFuture;
     }
@@ -86,15 +92,18 @@ public class TransactionRepository {
 
         CompletableFuture<Asset> assetFuture = new CompletableFuture<>();
 
-        ActionListener<UpdateResponse> actionListener = (ElasticActionListener<UpdateResponse>) (response) -> {
-            Map<String, Object> responseAssetMap = response.getGetResult().getSource();
-            responseAssetMap.put("id", id);
-            assetFuture.complete(mapper.convertValue(responseAssetMap, Asset.class));
+        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
+        UpdateRequest updateRequest = new UpdateRequest("assets", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
+        ActionListener<UpdateResponse> actionListener = new ElasticActionListener<UpdateResponse, Asset>(assetFuture) {
+            @Override
+            public void onResponse(UpdateResponse response) {
+                Map<String, Object> responseAssetMap = response.getGetResult().getSource();
+                responseAssetMap.put("id", id);
+                this.getFuture().complete(mapper.convertValue(responseAssetMap, Asset.class));
+            }
         };
 
-        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
-        UpdateRequest req = new UpdateRequest("assets", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
-        client.updateAsync(req, RequestOptions.DEFAULT, actionListener);
+        client.updateAsync(updateRequest, RequestOptions.DEFAULT, actionListener);
 
         return assetFuture;
     }
@@ -103,15 +112,18 @@ public class TransactionRepository {
 
         CompletableFuture<Product> productFuture = new CompletableFuture<>();
 
-        ActionListener<GetResponse> actionListener = (ElasticActionListener<GetResponse>) (response) -> {
-            Map<String, Object> wantedProductMap = response.getSource();
-            wantedProductMap.put("id", response.getId());
-            Product wantedProduct = mapper.convertValue(wantedProductMap, Product.class);
-            productFuture.complete(wantedProduct);
+        GetRequest getRequest = new GetRequest("products", id);
+        ActionListener<GetResponse> actionListener = new ElasticActionListener<GetResponse, Product>(productFuture) {
+            @Override
+            public void onResponse(GetResponse response) {
+                Map<String, Object> wantedProductMap = response.getSource();
+                wantedProductMap.put("id", response.getId());
+                Product wantedProduct = mapper.convertValue(wantedProductMap, Product.class);
+                this.getFuture().complete(wantedProduct);
+            }
         };
 
-        GetRequest req = new GetRequest("products", id);
-        client.getAsync(req, RequestOptions.DEFAULT, actionListener);
+        client.getAsync(getRequest, RequestOptions.DEFAULT, actionListener);
 
         return productFuture;
     }
@@ -120,15 +132,18 @@ public class TransactionRepository {
 
         CompletableFuture<Product> productFuture = new CompletableFuture<>();
 
-        ActionListener<UpdateResponse> actionListener = (ElasticActionListener<UpdateResponse>) (response) -> {
-            Map<String, Object> responseProductMap = response.getGetResult().getSource();
-            responseProductMap.put("id", id);
-            productFuture.complete(mapper.convertValue(responseProductMap, Product.class));
+        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
+        UpdateRequest updateRequest = new UpdateRequest("products", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
+        ActionListener<UpdateResponse> actionListener = new ElasticActionListener<UpdateResponse, Product>(productFuture) {
+            @Override
+            public void onResponse(UpdateResponse response) {
+                Map<String, Object> responseProductMap = response.getGetResult().getSource();
+                responseProductMap.put("id", id);
+                this.getFuture().complete(mapper.convertValue(responseProductMap, Product.class));
+            }
         };
 
-        String updatedFieldsString = mapper.writeValueAsString(updatedFields);
-        UpdateRequest req = new UpdateRequest("products", id).doc(updatedFieldsString, XContentType.JSON).fetchSource(true);
-        client.updateAsync(req, RequestOptions.DEFAULT, actionListener);
+        client.updateAsync(updateRequest, RequestOptions.DEFAULT, actionListener);
 
         return productFuture;
     }
@@ -138,10 +153,12 @@ public class TransactionRepository {
         CompletableFuture<List<AbstractContent>> resourcesListFuture = new CompletableFuture<>();
 
         SearchRequest searchRequest = searchRequestFindResourcesByPhrase(phrase, page, size);
-
-        ActionListener<SearchResponse> actionListener = (ElasticActionListener<SearchResponse>) (response) -> {
-            List<AbstractContent> resourcesList = getResourcesListFromSearchResponse(response);
-            resourcesListFuture.complete(resourcesList);
+        ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<AbstractContent>>(resourcesListFuture) {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<AbstractContent> resourcesList = getResourcesListFromSearchResponse(response);
+                this.getFuture().complete(resourcesList);
+            }
         };
 
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
@@ -154,10 +171,12 @@ public class TransactionRepository {
         CompletableFuture<List<Asset>> assetsListFuture = new CompletableFuture<>();
 
         SearchRequest searchRequest = findAllResourcesByIndex("assets", page, size);
-
-        ActionListener<SearchResponse> actionListener = (ElasticActionListener<SearchResponse>) (response) -> {
-            List<Asset> assetsList = getAssetsListFromSearchResponse(response);
-            assetsListFuture.complete(assetsList);
+        ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<Asset>>(assetsListFuture) {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Asset> assetsList = getAssetsListFromSearchResponse(response);
+                this.getFuture().complete(assetsList);
+            }
         };
 
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
@@ -170,10 +189,12 @@ public class TransactionRepository {
         CompletableFuture<List<Product>> productsListFuture = new CompletableFuture<>();
 
         SearchRequest searchRequest = findAllResourcesByIndex("products", page, size);
-
-        ActionListener<SearchResponse> actionListener = (ElasticActionListener<SearchResponse>) (response) -> {
-            List<Product> productsList = getProductsListFromSearchResponse(response);
-            productsListFuture.complete(productsList);
+        ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<Product>>(productsListFuture) {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Product> productsList = getProductsListFromSearchResponse(response);
+                this.getFuture().complete(productsList);
+            }
         };
 
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
@@ -186,10 +207,12 @@ public class TransactionRepository {
         CompletableFuture<List<Trade>> tradesListFuture = new CompletableFuture<>();
 
         SearchRequest searchRequest = findAllResourcesByIndex("trades", page, size);
-
-        ActionListener<SearchResponse> actionListener = (ElasticActionListener<SearchResponse>) (response) -> {
-            List<Trade> tradesList = getTradesListFromSearchResponse(response);
-            tradesListFuture.complete(tradesList);
+        ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<Trade>>(tradesListFuture) {
+            @Override
+            public void onResponse(SearchResponse response) {
+                List<Trade> tradesList = getTradesListFromSearchResponse(response);
+                this.getFuture().complete(tradesList);
+            }
         };
 
         client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
@@ -199,45 +222,41 @@ public class TransactionRepository {
 
     public CompletableFuture<List<String>> findSuggestedAssetsAndProducts(String keyword) {
 
-        CompletableFuture<List<String>> assetsAndProductsNamesFuture = new CompletableFuture<>();
-        String suggestionNameInBuilder = "suggest-assets";
+        // COMPLETEDFUTURE BEFORE THENCOMPOSE, BECAUSE THERE'S NO COMPOSE/FLATMAP ON START IN COMPLETABLEFUTURE
+        return CompletableFuture.completedFuture("start").thenComposeAsync(res -> {
+            CompletableFuture<List<String>> suggestedAssetsNamesFuture = new CompletableFuture<>();
+            String suggestionNameInBuilder = "suggest-assets";
 
-        SearchRequest searchRequest = searchRequestSuggestedAssetsByPrefixKeyword(keyword, suggestionNameInBuilder);
+            SearchRequest searchRequest = searchRequestSuggestedAssetsByPrefixKeyword(keyword, suggestionNameInBuilder);
+            ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsNamesFuture) {
+                @Override
+                public void onResponse(SearchResponse response) {
+                    this.getFuture().complete(getSuggestedAssetsNamesFromSearchResponse(response, suggestionNameInBuilder));
+                }
+            };
 
-        ActionListener<SearchResponse> actionListener = new ActionListener<>() {
-            @Override
-            public void onResponse(SearchResponse response) {
-                List<String> suggestedAssetsNames = getSuggestedAssetsNamesFromSearchResponse(response, suggestionNameInBuilder);
+            client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-                SearchRequest searchRequest = searchRequestProductsNamesBySuggestedAssetsNames(suggestedAssetsNames);
+            return suggestedAssetsNamesFuture;
 
-                ActionListener<SearchResponse> actionListener = new ActionListener<>() {
-                    @Override
-                    public void onResponse(SearchResponse response) {
-                        List<String> productsNamesList = getProductsNamesFromSearchResponse(response);
+        }).thenComposeAsync(suggestedAssetsNames -> {
 
-                        // COMBINE ASSETS' NAMES AND PRODUCTS' NAMES TO SINGLE LIST
-                        assetsAndProductsNamesFuture.complete(Stream.concat(suggestedAssetsNames.stream(), productsNamesList.stream()).collect(Collectors.toList()));
-                    }
+            CompletableFuture<List<String>> suggestedAssetsAndProductsNamesFuture = new CompletableFuture<>();
 
-                    @Override
-                    public void onFailure(Exception e) {
-                        assetsAndProductsNamesFuture.completeExceptionally(e);
-                    }
-                };
+            SearchRequest searchRequest = searchRequestProductsNamesBySuggestedAssetsNames(suggestedAssetsNames);
+            ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsAndProductsNamesFuture) {
+                @Override
+                public void onResponse(SearchResponse response) {
+                    List<String> productsNamesList = getProductsNamesFromSearchResponse(response);
+                    // CONCAT LIST OF ASSETS' NAMES AND PRODUCTS' NAMES
+                    this.getFuture().complete(Stream.concat(suggestedAssetsNames.stream(), productsNamesList.stream()).collect(Collectors.toList()));
+                }
+            };
 
-                client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
-            }
+            client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-            @Override
-            public void onFailure(Exception e) {
-                assetsAndProductsNamesFuture.completeExceptionally(e);
-            }
-        };
-
-        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
-
-        return assetsAndProductsNamesFuture;
+            return suggestedAssetsAndProductsNamesFuture;
+        });
     }
 
     private SearchRequest searchRequestFindResourcesByPhrase(String phrase, int page, int size) {

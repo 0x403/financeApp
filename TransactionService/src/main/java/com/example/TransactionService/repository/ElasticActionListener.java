@@ -1,17 +1,22 @@
 package com.example.TransactionService.repository;
 
-import lombok.SneakyThrows;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.elasticsearch.action.ActionListener;
 
-@FunctionalInterface
-public interface ElasticActionListener<T> extends ActionListener<T> {
+import java.util.concurrent.CompletableFuture;
+
+@Getter
+@AllArgsConstructor
+public abstract class ElasticActionListener<T, R> implements ActionListener<T> {
+
+    CompletableFuture<R> future;
 
     @Override
-    void onResponse(T response);
+    public abstract void onResponse(T response);
 
-    @SneakyThrows
     @Override
-    default void onFailure(Exception e) {
-        throw e;
+    public void onFailure(Exception e) {
+        future.completeExceptionally(e);
     }
 }
