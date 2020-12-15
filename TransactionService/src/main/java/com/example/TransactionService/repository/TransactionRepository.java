@@ -222,29 +222,25 @@ public class TransactionRepository {
 
     public CompletableFuture<List<String>> findSuggestedAssetsAndProducts(String keyword) {
 
-        // COMPLETEDFUTURE BEFORE THENCOMPOSE, BECAUSE THERE'S NO COMPOSE/FLATMAP ON START IN COMPLETABLEFUTURE
-        return CompletableFuture.completedFuture("start").thenComposeAsync(res -> {
-            CompletableFuture<List<String>> suggestedAssetsNamesFuture = new CompletableFuture<>();
-            String suggestionNameInBuilder = "suggest-assets";
+        CompletableFuture<List<String>> suggestedAssetsNamesFuture = new CompletableFuture<>();
+        String suggestionNameInBuilder = "suggest-assets";
 
-            SearchRequest searchRequest = searchRequestSuggestedAssetsByPrefixKeyword(keyword, suggestionNameInBuilder);
-            ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsNamesFuture) {
-                @Override
-                public void onResponse(SearchResponse response) {
-                    this.getFuture().complete(getSuggestedAssetsNamesFromSearchResponse(response, suggestionNameInBuilder));
-                }
-            };
+        SearchRequest searchRequest = searchRequestSuggestedAssetsByPrefixKeyword(keyword, suggestionNameInBuilder);
+        ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsNamesFuture) {
+            @Override
+            public void onResponse(SearchResponse response) {
+                this.getFuture().complete(getSuggestedAssetsNamesFromSearchResponse(response, suggestionNameInBuilder));
+            }
+        };
 
-            client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
 
-            return suggestedAssetsNamesFuture;
-
-        }).thenComposeAsync(suggestedAssetsNames -> {
+        return suggestedAssetsNamesFuture.thenComposeAsync(suggestedAssetsNames -> {
 
             CompletableFuture<List<String>> suggestedAssetsAndProductsNamesFuture = new CompletableFuture<>();
 
-            SearchRequest searchRequest = searchRequestProductsNamesBySuggestedAssetsNames(suggestedAssetsNames);
-            ActionListener<SearchResponse> actionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsAndProductsNamesFuture) {
+            SearchRequest nextSearchRequest = searchRequestProductsNamesBySuggestedAssetsNames(suggestedAssetsNames);
+            ActionListener<SearchResponse> nextActionListener = new ElasticActionListener<SearchResponse, List<String>>(suggestedAssetsAndProductsNamesFuture) {
                 @Override
                 public void onResponse(SearchResponse response) {
                     List<String> productsNamesList = getProductsNamesFromSearchResponse(response);
@@ -253,7 +249,7 @@ public class TransactionRepository {
                 }
             };
 
-            client.searchAsync(searchRequest, RequestOptions.DEFAULT, actionListener);
+            client.searchAsync(nextSearchRequest, RequestOptions.DEFAULT, nextActionListener);
 
             return suggestedAssetsAndProductsNamesFuture;
         });
